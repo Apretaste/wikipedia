@@ -4,7 +4,7 @@ class Wikipedia extends Service
 {
 	/**
 	 * Function called once this service is called
-	 * 
+	 *
 	 * @param Request
 	 * @return Response
 	 * */
@@ -14,8 +14,8 @@ class Wikipedia extends Service
 		if(empty($request->query))
 		{
 			$response = new Response();
-			$response->setResponseSubject("Debe insertar un texto a buscar");
-			$response->createFromText("Usted no ha insertado ning&uacute;n texto a buscar en Wikipedia. Inserte el texto en el asunto del email, justo despu&eacute;s de la palabra WIKIPEDIA.<br/><br/>Por ejemplo: Asunto: WIKIPEDIA jose marti");
+			$response->setResponseSubject("Que desea buscar en Wikipedia?");
+			$response->createFromTemplate("home.tpl", array());
 			return $response;
 		}
 
@@ -43,7 +43,7 @@ class Wikipedia extends Service
 			"isLarge" => $page['isLarge']
 		);
 
-		// send the response to the template 
+		// send the response to the template
 		$response = new Response();
 		$response->setResponseSubject("Wikipedia: {$page['title']}");
 		$response->createFromTemplate("wikipedia.tpl", $responseContent, $page['images']);
@@ -53,9 +53,9 @@ class Wikipedia extends Service
 
 	/**
 	 * Search in Wikipedia using OpenSearch
-	 * 
+	 *
 	 * @author salvipascual
-	 * @param String: text to search 
+	 * @param String: text to search
 	 * @return Mixed: Corrected query OR false if the article was not found
 	 */
 	private function search($query){
@@ -75,9 +75,9 @@ class Wikipedia extends Service
 
 	/**
 	 * Get an article from wikipedia
-	 * 
+	 *
 	 * @author salvipascual
-	 * @param String: text to search 
+	 * @param String: text to search
 	 * @return Mixed
 	 */
 	private function get($query) {
@@ -89,7 +89,7 @@ class Wikipedia extends Service
 		$url = "http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse";
 		$page = file_get_contents($url);
 
-		// if data was found ... 
+		// if data was found ...
 		if (strpos($page, 'missing=""') === false)
 		{
 			// decode the text from UTF8 and convert to ISO, which supports Spanish
@@ -141,7 +141,7 @@ class Wikipedia extends Service
 			$page = str_replace('>?</span>', '></span>', $page);
 			$page = trim($page);
 
- 
+
 			if ( ! empty($page))
 			{
 				// Build our DOMDocument, and load our HTML
@@ -184,7 +184,7 @@ class Wikipedia extends Service
 					$nodes->item(0)->setAttribute('style', 'width:100%;');
 				}
 
-				// make the quotes takes the whole screen 
+				// make the quotes takes the whole screen
 				$nodes = $xpath->query("//table[contains(@class, 'wikitable')]");
 				for($i=0; $i<$nodes->length; $i++)
 				{
@@ -204,17 +204,17 @@ class Wikipedia extends Service
 				{
 					foreach ($imagestags as $imgtag)
 					{
-						// get the full path to the image 
+						// get the full path to the image
 						$imgsrc = $imgtag->getAttribute('src');
 						if (substr($imgsrc, 0, 2) == '//') $imgsrc = 'https:' . $imgsrc;
 
 						// ignore all images but the main image
 						if (
-							stripos($imgsrc, '/static/') !== false 
-							|| stripos($imgsrc, 'increase') !== false 
-							|| stripos($imgsrc, 'check') !== false 
-							|| stripos($imgsrc, 'mark') !== false 
-							|| stripos($imgsrc, 'emblem') !== false 
+							stripos($imgsrc, '/static/') !== false
+							|| stripos($imgsrc, 'increase') !== false
+							|| stripos($imgsrc, 'check') !== false
+							|| stripos($imgsrc, 'mark') !== false
+							|| stripos($imgsrc, 'emblem') !== false
 							|| stripos($imgsrc, 'symbol_comment') !== false
 							|| stripos($imgsrc, '.svg') !== false
 						) continue;
@@ -250,9 +250,18 @@ class Wikipedia extends Service
 				$page = str_replace("<p", "<p style=\"text-align:justify;\" align=\"justify\"", $page);
 				$page = wordwrap($page, 200, "\n");
 
-				// convert the links to emails
-				$apretasteValidEmailAddress = $this->utils->getValidEmailAddress();
-				$page = str_replace("href=\"/wiki/", 'href="mailto:'.$apretasteValidEmailAddress.'?subject=WIKIPEDIA ', $page);
+				// if it is working for the app, convert the links to onclick
+				if($di->get('environment') == "app") {
+					preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
+					for ($i=0; $i < count($matches[0]); $i++) {
+						$page = str_replace($matches[0][$i], "href='#' onclick=\"apretaste.doaction('WIKIPEDIA {$matches[1][$i]}', false, '', true);\"", $page);
+					}
+				}
+				// else convert the links to mailto
+				else {
+					$apretasteValidEmailAddress = $this->utils->getValidEmailAddress();
+					$page = str_replace("href=\"/wiki/", 'href="mailto:'.$apretasteValidEmailAddress.'?subject=WIKIPEDIA ', $page);
+				}
 
 				// strip unnecessary, dangerous tags
 				$page = strip_tags($page, '<a><abbr><acronym><address><applet><area><article><aside><audio><b><base><basefont><bdi><bdo><big><blockquote><br><button><canvas><caption><center><cite><code><col><colgroup><command><datalist><dd><del><details><dfn><dialog><dir><div><dl><dt><em><embed><fieldset><figcaption><figure><font><footer><form><frame><frameset><head><header><h1> - <h6><hr><i><iframe><input><ins><kbd><keygen><label><legend><li><link><map><mark><menu><meta><meter><nav><noframes><noscript><object><ol><optgroup><option><output><p><param><pre><progress><q><rp><rt><ruby><s><samp><script><section><select><small><source><span><strike><strong><style><sub><summary><sup><table><tbody><td><textarea><tfoot><th><thead><time><title><tr><track><tt><u><ul><var><video><wbr><h2><h3>');
