@@ -7,13 +7,14 @@ class Wikipedia extends Service
 	 *
 	 * @param Request
 	 * @return Response
-	 * */
+	 */
 	public function _main(Request $request)
 	{
 		// do not allow blank searches
 		if(empty($request->query))
 		{
 			$response = new Response();
+			$response->setCache();
 			$response->setResponseSubject("Que desea buscar en Wikipedia?");
 			$response->createFromTemplate("home.tpl", array());
 			return $response;
@@ -24,6 +25,7 @@ class Wikipedia extends Service
 		if(empty($correctedQuery))
 		{
 			$response = new Response();
+			$response->setCache();
 			$response->setResponseSubject("Su busqueda no produjo resultados");
 			$response->createFromText("Su b&uacute;squeda <b>{$request->query}</b> no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.");
 			return $response;
@@ -45,6 +47,7 @@ class Wikipedia extends Service
 
 		// send the response to the template
 		$response = new Response();
+		$response->setCache("month");
 		$response->setResponseSubject("Wikipedia: {$page['title']}");
 		$response->createFromTemplate("wikipedia.tpl", $responseContent, $page['images']);
 		return $response;
