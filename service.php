@@ -53,7 +53,6 @@ class Wikipedia extends Service
 		return $response;
 	}
 
-
 	/**
 	 * Search in Wikipedia using OpenSearch
 	 *
@@ -74,7 +73,6 @@ class Wikipedia extends Service
 		if (isset($results[0])) return utf8_decode($results[0]);
 		else return false;
 	}
-
 
 	/**
 	 * Get an article from wikipedia
