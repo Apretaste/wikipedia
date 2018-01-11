@@ -225,9 +225,6 @@ class Wikipedia extends Service
 						$content = file_get_contents($imgsrc);
 						file_put_contents($filePath, $content);
 
-						// optimize the image
-						$this->utils->optimizeImage($filePath, 300);
-
 						// save the image in the array for the template
 						$images[] = $filePath;
 						break; // we need an array containing only the first, valid image
@@ -255,7 +252,7 @@ class Wikipedia extends Service
 				if($di->get('environment') == "app") {
 					preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
 					for ($i=0; $i < count($matches[0]); $i++) {
-						$page = str_replace($matches[0][$i], "href='#' onclick=\"apretaste.doaction('WIKIPEDIA {$matches[1][$i]}', false, '', true);\"", $page);
+						$page = str_replace($matches[0][$i], "href='#!' onclick=\"apretaste.doaction('WIKIPEDIA {$matches[1][$i]}', false, '', true);\"", $page);
 					}
 				}
 				// else convert the links to mailto
