@@ -234,7 +234,8 @@ class Service
 				// convert the links to onclick
 				preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
 				for ($i=0; $i < count($matches[0]); $i++) {
-					$page = str_replace($matches[0][$i], "href='#!' onclick='search(" . '"' . urldecode($matches[1][$i]) . '"' . ")'", $page);
+					$onclick = 'wikisearch("' . urldecode($matches[1][$i]) . '")';
+					$page = str_replace($matches[0][$i], "href='#!' onclick='$onclick'", $page);
 				}
 
 				// strip unnecessary, dangerous tags

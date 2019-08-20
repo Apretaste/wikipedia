@@ -11,10 +11,10 @@ function submit()
 	var query = $('#query').val();
 
 	// perform a search
-	search(query);
+	wikisearch(query);
 }
 
-function search(query)
+function wikisearch(query)
 {
 	// check the query is not empty
 	if(query.length <= 3) {
