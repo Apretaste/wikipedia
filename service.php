@@ -199,6 +199,7 @@ class Service
 							|| stripos($imgsrc, 'mark') !== false
 							|| stripos($imgsrc, 'emblem') !== false
 							|| stripos($imgsrc, 'symbol_comment') !== false
+							|| stripos($imgsrc, 'svg') !== false
 							|| stripos($imgsrc, '.svg') !== false
 						) continue;
 
@@ -209,7 +210,7 @@ class Service
 
 						// save the image in the array for the template
 						$images[] = $filePath;
-						break; // we need an array containing only the first, valid image
+						break; // save only the first valid image
 					}
 				}
 

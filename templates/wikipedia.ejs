@@ -2,7 +2,9 @@
 	<div class="col s12 center-align">
 		<h1><%- title %></h1>
 
-		<img class="fullscreen" src="{{APP_IMAGE_PATH}}<%= image %>" alt="Foto de <%= title %>"/>
+		<% if(image) { %>
+			<img class="fullscreen" src="{{APP_IMAGE_PATH}}<%= image %>" alt="<%= title %>"/>
+		<% } %>
 
 		<div class="break-long-words">
 			<%- body %>
