@@ -1,56 +1,50 @@
 <?php
 
-class Wikipedia extends Service
+class Service
 {
 	/**
-	 * Function called once this service is called
+	 * Open the wikipedia service
 	 *
+	 * @author salvipascual
 	 * @param Request
-	 * @return Response
+	 * @param Response
 	 */
-	public function _main(Request $request)
+	public function _main(Request $request, Response $response)
 	{
 		// do not allow blank searches
-		if(empty($request->query))
-		{
-			$response = new Response();
+		if(empty($request->input->data->query)) {
 			$response->setCache();
-			$response->setResponseSubject("Que desea buscar en Wikipedia?");
-			$response->createFromTemplate("home.tpl", array());
-			return $response;
+			return $response->setTemplate("home.ejs", []);
 		}
 
 		// find the right query in wikipedia
-		$correctedQuery = $this->search($request->query);
-		if(empty($correctedQuery))
-		{
-			$response = new Response();
+		$correctedQuery = $this->search($request->input->data->query);
+
+		// message of the search is not valid
+		if(empty($correctedQuery)) {
 			$response->setCache();
-			$response->setResponseSubject("Su busqueda no produjo resultados");
-			$response->createFromText("Su b&uacute;squeda <b>{$request->query}</b> no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.");
-			return $response;
+			return $response->setTemplate('message.ejs', [
+				"header" => "Búsqueda no encontrada",
+				"text" => "Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente."
+			]);
 		}
 
 		// get the HTML code for the page
 		$page = $this->get(urlencode($correctedQuery));
 
 		// get the home image
-		$imageName = empty($page['images']) ? false : $page['images'][0];
+		$imageName = empty($page['images']) ? false : basename($page['images'][0]);
 
 		// create a json object to send to the template
-		$responseContent = array(
+		$content = [
 			"title" => $page['title'],
 			"body" => $page['body'],
-			"image" => $imageName,
-			"isLarge" => $page['isLarge']
-		);
+			"image" => $imageName
+		];
 
 		// send the response to the template
-		$response = new Response();
 		$response->setCache("month");
-		$response->setResponseSubject("Wikipedia: {$page['title']}");
-		$response->createFromTemplate("wikipedia.tpl", $responseContent, $page['images']);
-		return $response;
+		$response->setTemplate("wikipedia.ejs", $content, $page['images']);
 	}
 
 	/**
@@ -58,15 +52,15 @@ class Wikipedia extends Service
 	 *
 	 * @author salvipascual
 	 * @param String: text to search
-	 * @return Mixed: Corrected query OR false if the article was not found
+	 * @return Mixed: String OR false if article not found
 	 */
-	private function search($query){
+	private function search($query)
+	{
 		// get the results based on your query
 		$encodedQuery = urlencode($query);
-		$url = "http://es.wikipedia.org/w/api.php?action=opensearch&search=$encodedQuery&limit=10&namespace=0&format=json";
 
 		// get the results part as an array
-		$page = file_get_contents($url);
+		$page = file_get_contents("http://es.wikipedia.org/w/api.php?action=opensearch&search=$encodedQuery&limit=10&namespace=0&format=json");
 		$results = json_decode($page)[1];
 
 		// return corrected query or false
@@ -81,18 +75,17 @@ class Wikipedia extends Service
 	 * @param String: text to search
 	 * @return Mixed
 	 */
-	private function get($query) {
-		// get path to the www folder
-		$di = \Phalcon\DI\FactoryDefault::getDefault();
-		$wwwroot = $di->get('path')['root'];
+	private function get($query)
+	{
+		// get content from cache
+		$cache = Utils::getTempDir() . "wikipedia_" . md5($query) . date("Ym") . ".cache";
+		if(file_exists($cache)) return unserialize(file_get_contents($cache));
 
 		// get the url
-		$url = "http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse";
-		$page = file_get_contents($url);
+		$page = file_get_contents("http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse");
 
 		// if data was found ...
-		if (strpos($page, 'missing=""') === false)
-		{
+		if (strpos($page, 'missing=""') === false) {
 			// decode the text from UTF8 and convert to ISO, which supports Spanish
 			if (mb_check_encoding($page, 'UTF8')) $page = utf8_decode($page);
 			$page = html_entity_decode($page, ENT_COMPAT | ENT_HTML401, 'ISO-8859-1');
@@ -110,11 +103,9 @@ class Wikipedia extends Service
 			// remove the table of contents
 			$mark = '<div id="toc" class="toc">';
 			$p1 = strpos($page, $mark);
-			if ($p1 !== false)
-			{
+			if ($p1 !== false) {
 				$p2 = strpos($page, '</div>', $p1);
-				if ($p2 !== false)
-				{
+				if ($p2 !== false) {
 					$p2 = strpos($page, '</div>', $p2 + 1);
 					$page = substr($page, 0, $p1) . substr($page, $p2 + 6);
 				}
@@ -131,8 +122,7 @@ class Wikipedia extends Service
 
 			// remove references links
 			$p = strpos($page, '<h2><span class="mw-headline" id="Referencias">');
-			if ($p !== false)
-			{
+			if ($p !== false) {
 				$part = substr($page, $p);
 				$part = strip_tags($part, '<li><ul><span><h2><h3>');
 				$page = substr($page, 0, $p) . $part;
@@ -142,9 +132,7 @@ class Wikipedia extends Service
 			$page = str_replace('>?</span>', '></span>', $page);
 			$page = trim($page);
 
-
-			if ( ! empty($page))
-			{
+			if ( ! empty($page)) {
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
 				@$doc->loadHTML($page);
@@ -156,8 +144,7 @@ class Wikipedia extends Service
 				$elements = $xpath->query("//*[contains(@class,'thumb')]");
 
 				// Cycle over each, remove attribute 'class'
-				foreach ($elements as $element)
-				{
+				foreach ($elements as $element) {
 					// Empty out the class attribute value
 					$element->parentNode->removeChild($element);
 				}
@@ -169,8 +156,7 @@ class Wikipedia extends Service
 
 				// make the suggestion smaller and separate it from the table
 				$nodes = $xpath->query("//div[contains(@class, 'rellink')]");
-				if ($nodes->length > 0)
-				{
+				if ($nodes->length > 0) {
 					$nodes->item(0)->setAttribute("style", "font-size:small;");
 					$nodes->item(0)->appendChild($doc->createElement("br"));
 					$nodes->item(0)->appendChild($doc->createElement("br"));
@@ -178,8 +164,7 @@ class Wikipedia extends Service
 
 				// make the table centered
 				$nodes = $xpath->query("//table[contains(@class, 'infobox')]");
-				if ($nodes->length > 0)
-				{
+				if ($nodes->length > 0) {
 					$nodes->item(0)->setAttribute("border", "1");
 					$nodes->item(0)->setAttribute("width", "100%");
 					$nodes->item(0)->setAttribute('style', 'width:100%;');
@@ -187,8 +172,7 @@ class Wikipedia extends Service
 
 				// make the quotes takes the whole screen
 				$nodes = $xpath->query("//table[contains(@class, 'wikitable')]");
-				for($i=0; $i<$nodes->length; $i++)
-				{
+				for($i=0; $i<$nodes->length; $i++) {
 					$nodes->item($i)->setAttribute("width", "100%");
 					$nodes->item($i)->setAttribute("style", "table-layout:fixed; width:100%;");
 				}
@@ -200,11 +184,9 @@ class Wikipedia extends Service
 				// Load images
 				$imagestags = $doc->getElementsByTagName("img");
 
-				$images = array();
-				if ($imagestags->length > 0)
-				{
-					foreach ($imagestags as $imgtag)
-					{
+				$images = [];
+				if ($imagestags->length > 0) {
+					foreach ($imagestags as $imgtag) {
 						// get the full path to the image
 						$imgsrc = $imgtag->getAttribute('src');
 						if (substr($imgsrc, 0, 2) == '//') $imgsrc = 'https:' . $imgsrc;
@@ -221,7 +203,7 @@ class Wikipedia extends Service
 						) continue;
 
 						// save image file
-						$filePath = "$wwwroot/temp/" . $this->utils->generateRandomHash() . ".jpg";
+						$filePath = Utils::getTempDir() . Utils::generateRandomHash() . ".jpg";
 						$content = file_get_contents($imgsrc);
 						file_put_contents($filePath, $content);
 
@@ -248,17 +230,10 @@ class Wikipedia extends Service
 				$page = str_replace("<p", "<p style=\"text-align:justify;\" align=\"justify\"", $page);
 				$page = wordwrap($page, 200, "\n");
 
-				// if it is working for the app, convert the links to onclick
-				if($di->get('environment') == "app") {
-					preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
-					for ($i=0; $i < count($matches[0]); $i++) {
-						$page = str_replace($matches[0][$i], "href='#!' onclick=\"apretaste.doaction('WIKIPEDIA {$matches[1][$i]}', false, '', true);\"", $page);
-					}
-				}
-				// else convert the links to mailto
-				else {
-					$apretasteValidEmailAddress = $this->utils->getValidEmailAddress();
-					$page = str_replace("href=\"/wiki/", 'href="mailto:'.$apretasteValidEmailAddress.'?subject=WIKIPEDIA ', $page);
+				// convert the links to onclick
+				preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
+				for ($i=0; $i < count($matches[0]); $i++) {
+					$page = str_replace($matches[0][$i], "href='#!' onclick='search(" . '"' . urldecode($matches[1][$i]) . '"' . ")'", $page);
 				}
 
 				// strip unnecessary, dangerous tags
@@ -267,23 +242,16 @@ class Wikipedia extends Service
 				// compress the returning code
 				$page = preg_replace('/\s+/S', " ", $page);
 
-				// if the result is too big, hide images and shorten text
-				$limit = 1024 * 450;
-				$isLarge = false;
-				if (strlen($page) > $limit)
-				{
-					$isLarge = true;
-					$images = array();
-					$page = substr($page, 0, $limit);
-				}
-
-				// save content into pages that will go to the view
-				return array(
+				// save the content that will go to the view
+				$finalContent = [
 					"title" => $title,
 					"body" => $page,
-					"images" => $images,
-					"isLarge" => $isLarge
-				);
+					"images" => $images
+				];
+
+				// create the cache and return
+				file_put_contents($cache, serialize($finalContent));
+				return $finalContent;
 			}
 		}
 

@@ -1,0 +1,14 @@
+<div class="row">
+	<div class="col s12 center-align">
+		<h1><%- title %></h1>
+
+		<img class="fullscreen" src="{{APP_IMAGE_PATH}}<%= image %>" alt="Foto de <%= title %>"/>
+
+		<%- body %>
+	</div>
+</div>
+
+<!-- BACK BUTTON -->
+<div class="fixed-action-btn">
+	<a class="btn-floating btn-large waves-effect waves-light green" href="#!" onclick="apretaste.send({'command':'WIKIPEDIA'})"><i class="material-icons">arrow_back</i></a>
+</div>

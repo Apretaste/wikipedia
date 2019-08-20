@@ -1,6 +1,0 @@
-<service>
-	<serviceName>wikipedia</serviceName>
-	<serviceDescription>Le permite consultar Wikipedia en tiempo real</serviceDescription>
-	<creatorEmail>salvi@apretaste.com</creatorEmail>
-	<serviceCategory>academico</serviceCategory>
-</service>
