@@ -221,16 +221,6 @@ class Service
 				// Output the HTML of our container
 				$page = $doc->saveHTML();
 
-				// cleanning the text to look better in the email
-				$page = str_replace("<br>", "<br>\n", $page);
-				$page = str_replace("<br/>", "<br/>\n", $page);
-				$page = str_replace("</p>", "</p>\n", $page);
-				$page = str_replace("</h2>", "</h2>\n", $page);
-				$page = str_replace("</span>", "</span>\n", $page);
-				$page = str_replace("/>", "/>\n", $page);
-				$page = str_replace("<p", "<p style=\"text-align:justify;\" align=\"justify\"", $page);
-				$page = wordwrap($page, 200, "\n");
-
 				// convert the links to onclick
 				preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
 				for ($i=0; $i < count($matches[0]); $i++) {

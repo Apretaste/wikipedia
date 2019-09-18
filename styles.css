@@ -7,3 +7,7 @@
 	word-wrap: break-word;
 	-ms-word-break: break-all;
 }
+
+.bottom-space {
+	margin-bottom: 60px;
+}
