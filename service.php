@@ -5,14 +5,16 @@ class Service
 	/**
 	 * Open the wikipedia service
 	 *
-	 * @author salvipascual
 	 * @param Request
 	 * @param Response
+	 *
+	 * @return \Response
+	 * @author salvipascual
 	 */
 	public function _main(Request $request, Response $response)
 	{
 		// do not allow blank searches
-		if(empty($request->input->data->query)) {
+		if (empty($request->input->data->query)) {
 			$response->setCache();
 			return $response->setTemplate("home.ejs", []);
 		}
@@ -21,7 +23,7 @@ class Service
 		$correctedQuery = $this->search($request->input->data->query);
 
 		// message of the search is not valid
-		if(empty($correctedQuery)) {
+		if (empty($correctedQuery)) {
 			$response->setCache();
 			return $response->setTemplate('message.ejs', [
 				"header" => "Búsqueda no encontrada",
@@ -45,6 +47,8 @@ class Service
 		// send the response to the template
 		$response->setCache("month");
 		$response->setTemplate("wikipedia.ejs", $content, $page['images']);
+
+		Challenges::complete("search-in-wikipedia", $request->person->id);
 	}
 
 	/**
@@ -64,8 +68,11 @@ class Service
 		$results = json_decode($page)[1];
 
 		// return corrected query or false
-		if (isset($results[0])) return utf8_decode($results[0]);
-		else return false;
+		if (isset($results[0])) {
+			return utf8_decode($results[0]);
+		} else {
+			return false;
+		}
 	}
 
 	/**
@@ -79,7 +86,9 @@ class Service
 	{
 		// get content from cache
 		$cache = Utils::getTempDir() . "wikipedia_" . md5($query) . date("Ym") . ".cache";
-		if(file_exists($cache)) return unserialize(file_get_contents($cache));
+		if (file_exists($cache)) {
+			return unserialize(file_get_contents($cache));
+		}
 
 		// get the url
 		$page = file_get_contents("http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse");
@@ -87,7 +96,9 @@ class Service
 		// if data was found ...
 		if (strpos($page, 'missing=""') === false) {
 			// decode the text from UTF8 and convert to ISO, which supports Spanish
-			if (mb_check_encoding($page, 'UTF8')) $page = utf8_decode($page);
+			if (mb_check_encoding($page, 'UTF8')) {
+				$page = utf8_decode($page);
+			}
 			$page = html_entity_decode($page, ENT_COMPAT | ENT_HTML401, 'ISO-8859-1');
 
 			// remove everything between the index and external links
@@ -114,7 +125,9 @@ class Service
 			// remove external links
 			$mark = '<span class="mw-headline" id="Enlaces_externos';
 			$p = strpos($page, $mark);
-			if ($p !== false) $page = substr($page, 0, $p - 4);
+			if ($p !== false) {
+				$page = substr($page, 0, $p - 4);
+			}
 
 			// remove other stuff
 			$page = str_replace("</api>", "", $page);
@@ -132,7 +145,7 @@ class Service
 			$page = str_replace('>?</span>', '></span>', $page);
 			$page = trim($page);
 
-			if ( ! empty($page)) {
+			if (! empty($page)) {
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
 				@$doc->loadHTML($page);
@@ -151,8 +164,11 @@ class Service
 
 				// get the title from the response
 				$nodes = $xpath->query("//th[contains(@class, 'cabecera')]");
-				if ($nodes->length > 0) $title = htmlentities(trim($nodes->item(0)->textContent), ENT_COMPAT, 'UTF-8');
-				else $title = urldecode(ucwords($query));
+				if ($nodes->length > 0) {
+					$title = htmlentities(trim($nodes->item(0)->textContent), ENT_COMPAT, 'UTF-8');
+				} else {
+					$title = urldecode(ucwords($query));
+				}
 
 				// make the suggestion smaller and separate it from the table
 				$nodes = $xpath->query("//div[contains(@class, 'rellink')]");
@@ -172,14 +188,16 @@ class Service
 
 				// make the quotes takes the whole screen
 				$nodes = $xpath->query("//table[contains(@class, 'wikitable')]");
-				for($i=0; $i<$nodes->length; $i++) {
+				for ($i=0; $i<$nodes->length; $i++) {
 					$nodes->item($i)->setAttribute("width", "100%");
 					$nodes->item($i)->setAttribute("style", "table-layout:fixed; width:100%;");
 				}
 
 				// remove all the noresize resources that makes the page wider
 				$nodes = $xpath->query("//*[contains(@class, 'noresize')]");
-				for($i=0; $i<$nodes->length; $i++) $nodes->item($i)->parentNode->removeChild($nodes->item($i));
+				for ($i=0; $i<$nodes->length; $i++) {
+					$nodes->item($i)->parentNode->removeChild($nodes->item($i));
+				}
 
 				// Load images
 				$imagestags = $doc->getElementsByTagName("img");
@@ -189,7 +207,9 @@ class Service
 					foreach ($imagestags as $imgtag) {
 						// get the full path to the image
 						$imgsrc = $imgtag->getAttribute('src');
-						if (substr($imgsrc, 0, 2) == '//') $imgsrc = 'https:' . $imgsrc;
+						if (substr($imgsrc, 0, 2) == '//') {
+							$imgsrc = 'https:' . $imgsrc;
+						}
 
 						// ignore all images but the main image
 						if (
@@ -201,7 +221,9 @@ class Service
 							|| stripos($imgsrc, 'symbol_comment') !== false
 							|| stripos($imgsrc, 'svg') !== false
 							|| stripos($imgsrc, '.svg') !== false
-						) continue;
+						) {
+							continue;
+						}
 
 						// save image file
 						$filePath = Utils::getTempDir() . Utils::generateRandomHash() . ".jpg";
@@ -216,7 +238,9 @@ class Service
 
 				// remove all the <a> linking images
 				$nodes = $xpath->query("//a[contains(@class, 'image')]");
-				for($i=0; $i<$nodes->length; $i++) $nodes->item($i)->parentNode->removeChild($nodes->item($i));
+				for ($i=0; $i<$nodes->length; $i++) {
+					$nodes->item($i)->parentNode->removeChild($nodes->item($i));
+				}
 
 				// Output the HTML of our container
 				$page = $doc->saveHTML();
