@@ -1,22 +1,33 @@
 <?php
 
+use Apretaste\Notifications;
+use Apretaste\Money;
+use Apretaste\Person;
+use Apretaste\Request;
+use Apretaste\Response;
+use Framework\Database;
+use Apretaste\Challenges;
+use Apretaste\Level;
+use Framework\Utils;
+
 class Service
 {
 	/**
 	 * Open the wikipedia service
 	 *
-	 * @param Request
-	 * @param Response
+	 * @param \Apretaste\Request  $request
+	 * @param \Apretaste\Response $response
 	 *
-	 * @return \Response
+	 * @throws \Framework\Alert
 	 * @author salvipascual
 	 */
-	public function _main(Request $request, Response $response)
+	public function _main(Request $request, Response &$response)
 	{
 		// do not allow blank searches
 		if (empty($request->input->data->query)) {
 			$response->setCache();
-			return $response->setTemplate("home.ejs", []);
+			$response->setTemplate('home.ejs', []);
+			return;
 		}
 
 		// find the right query in wikipedia
@@ -25,10 +36,11 @@ class Service
 		// message of the search is not valid
 		if (empty($correctedQuery)) {
 			$response->setCache();
-			return $response->setTemplate('message.ejs', [
-				"header" => "Búsqueda no encontrada",
-				"text" => "Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente."
+			$response->setTemplate('message.ejs', [
+					'header' => 'Búsqueda no encontrada',
+					'text'   => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
 			]);
+			return;
 		}
 
 		// get the HTML code for the page
@@ -39,16 +51,16 @@ class Service
 
 		// create a json object to send to the template
 		$content = [
-			"title" => $page['title'],
-			"body" => $page['body'],
-			"image" => $imageName
+				'title' => $page['title'],
+				'body'  => $page['body'],
+				'image' => $imageName
 		];
 
 		// send the response to the template
-		$response->setCache("month");
-		$response->setTemplate("wikipedia.ejs", $content, $page['images']);
+		$response->setCache('month');
+		$response->setTemplate('wikipedia.ejs', $content, $page['images']);
 
-		Challenges::complete("search-in-wikipedia", $request->person->id);
+		Challenges::complete('search-in-wikipedia', $request->person->id);
 	}
 
 	/**
@@ -70,24 +82,27 @@ class Service
 		// return corrected query or false
 		if (isset($results[0])) {
 			return utf8_decode($results[0]);
-		} else {
-			return false;
 		}
+
+		return false;
 	}
 
 	/**
 	 * Get an article from wikipedia
 	 *
-	 * @author salvipascual
 	 * @param String: text to search
+	 *
 	 * @return Mixed
+	 * @throws \Exception
+	 * @author salvipascual
 	 */
 	private function get($query)
 	{
 		// get content from cache
-		$cache = Utils::getTempDir() . "wikipedia_" . md5($query) . date("Ym") . ".cache";
+		$cache = TEMP_PATH .'wikipedia_'. md5($query) . date('Ym') .'.cache';
 		if (file_exists($cache)) {
-			return unserialize(file_get_contents($cache));
+			$data = file_get_contents($cache);
+			return unserialize($data);
 		}
 
 		// get the url
@@ -130,8 +145,8 @@ class Service
 			}
 
 			// remove other stuff
-			$page = str_replace("</api>", "", $page);
-			$page = str_replace("<api>", "", $page);
+			$page = str_replace('</api>', '', $page);
+			$page = str_replace('<api>', '', $page);
 
 			// remove references links
 			$p = strpos($page, '<h2><span class="mw-headline" id="Referencias">');
@@ -173,24 +188,24 @@ class Service
 				// make the suggestion smaller and separate it from the table
 				$nodes = $xpath->query("//div[contains(@class, 'rellink')]");
 				if ($nodes->length > 0) {
-					$nodes->item(0)->setAttribute("style", "font-size:small;");
-					$nodes->item(0)->appendChild($doc->createElement("br"));
-					$nodes->item(0)->appendChild($doc->createElement("br"));
+					$nodes->item(0)->setAttribute('style', 'font-size:small;');
+					$nodes->item(0)->appendChild($doc->createElement('br'));
+					$nodes->item(0)->appendChild($doc->createElement('br'));
 				}
 
 				// make the table centered
 				$nodes = $xpath->query("//table[contains(@class, 'infobox')]");
 				if ($nodes->length > 0) {
-					$nodes->item(0)->setAttribute("border", "1");
-					$nodes->item(0)->setAttribute("width", "100%");
+					$nodes->item(0)->setAttribute('border', '1');
+					$nodes->item(0)->setAttribute('width', '100%');
 					$nodes->item(0)->setAttribute('style', 'width:100%;');
 				}
 
 				// make the quotes takes the whole screen
 				$nodes = $xpath->query("//table[contains(@class, 'wikitable')]");
 				for ($i=0; $i<$nodes->length; $i++) {
-					$nodes->item($i)->setAttribute("width", "100%");
-					$nodes->item($i)->setAttribute("style", "table-layout:fixed; width:100%;");
+					$nodes->item($i)->setAttribute('width', '100%');
+					$nodes->item($i)->setAttribute('style', 'table-layout:fixed; width:100%;');
 				}
 
 				// remove all the noresize resources that makes the page wider
@@ -200,14 +215,14 @@ class Service
 				}
 
 				// Load images
-				$imagestags = $doc->getElementsByTagName("img");
+				$imagestags = $doc->getElementsByTagName('img');
 
 				$images = [];
 				if ($imagestags->length > 0) {
 					foreach ($imagestags as $imgtag) {
 						// get the full path to the image
 						$imgsrc = $imgtag->getAttribute('src');
-						if (substr($imgsrc, 0, 2) == '//') {
+						if (substr($imgsrc, 0, 2)==='//') {
 							$imgsrc = 'https:' . $imgsrc;
 						}
 
@@ -226,7 +241,7 @@ class Service
 						}
 
 						// save image file
-						$filePath = Utils::getTempDir() . Utils::generateRandomHash() . ".jpg";
+						$filePath = TEMP_PATH . Utils::randomHash() .'.jpg';
 						$content = file_get_contents($imgsrc);
 						file_put_contents($filePath, $content);
 
@@ -247,19 +262,19 @@ class Service
 
 				// convert the links to onclick
 				preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
-				for ($i=0; $i < count($matches[0]); $i++) {
+				for ($i=0, $iMax = count($matches[0]); $i < $iMax; $i++) {
 					$onclick = 'wikisearch("' . urldecode($matches[1][$i]) . '")';
 					$page = str_replace($matches[0][$i], "href='#!' onclick='$onclick'", $page);
 				}
 
 				// compress the returning code
-				$page = preg_replace('/\s+/S', " ", $page);
+				$page = preg_replace('/\s+/S', ' ', $page);
 
 				// save the content that will go to the view
 				$finalContent = [
-					"title" => $title,
-					"body" => base64_encode($page),
-					"images" => $images
+						'title'  => $title,
+						'body'   => base64_encode($page),
+						'images' => $images
 				];
 
 				// create the cache and return

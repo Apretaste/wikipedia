@@ -1,8 +1,9 @@
 {
 	"name": "wikipedia",
-	"version": 2,
 	"description": "Le permite consultar la Wikipedia en tiempo real",
 	"category": "academico",
 	"creator": "salvi@apretaste.org",
 	"listed": true
+	"guest":  true,
+	"caption": "Wikipedia"
 }
