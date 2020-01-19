@@ -5,6 +5,7 @@ use Apretaste\Money;
 use Apretaste\Person;
 use Apretaste\Request;
 use Apretaste\Response;
+use Framework\Crawler;
 use Framework\Database;
 use Apretaste\Challenges;
 use Apretaste\Level;
@@ -66,9 +67,11 @@ class Service
 	/**
 	 * Search in Wikipedia using OpenSearch
 	 *
-	 * @author salvipascual
 	 * @param String: text to search
+	 *
 	 * @return Mixed: String OR false if article not found
+	 * @throws \Framework\Alert
+	 * @author salvipascual
 	 */
 	private function search($query)
 	{
@@ -76,7 +79,7 @@ class Service
 		$encodedQuery = urlencode($query);
 
 		// get the results part as an array
-		$page = file_get_contents("http://es.wikipedia.org/w/api.php?action=opensearch&search=$encodedQuery&limit=10&namespace=0&format=json");
+		$page = Crawler::get("http://es.wikipedia.org/w/api.php?action=opensearch&search=$encodedQuery&limit=10&namespace=0&format=json");
 		$results = json_decode($page)[1];
 
 		// return corrected query or false
@@ -106,7 +109,7 @@ class Service
 		}
 
 		// get the url
-		$page = file_get_contents("http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse");
+		$page = Crawler::get("http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse");
 
 		// if data was found ...
 		if (strpos($page, 'missing=""') === false) {
