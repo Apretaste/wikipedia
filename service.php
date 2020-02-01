@@ -159,9 +159,20 @@ class Service
 			$page = trim($page);
 
 			if (! empty($page)) {
+
+				$tidy = new tidy();
+				$page = mb_convert_encoding($page, 'HTML-ENTITIES', 'UTF-8');
+				$page = $tidy->repairString($page, [
+						'output-xhtml' => true,
+				], 'utf8');
+
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
-				@$doc->loadHTML($page);
+				try {
+					@$doc->loadHTML($page);
+				} catch (Exception $e) {
+
+				}
 
 				// New-up an instance of our DOMXPath class
 				$xpath = new DOMXPath($doc);
