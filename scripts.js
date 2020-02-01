@@ -17,8 +17,8 @@ function submit()
 function wikisearch(query)
 {
 	// check the query is not empty
-	if(query.length <= 3) {
-		M.toast({html: 'Inserte más de 3 caracteres'});
+	if(query.length < 1) {
+		M.toast({html: 'Escriba lo que desea buscar'});
 		return false;
 	}
 
