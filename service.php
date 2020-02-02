@@ -98,7 +98,7 @@ class Service
 	{
 		// get content from cache
 		$cache = TEMP_PATH .'wikipedia_'. md5($query) . date('Ym') .'.cache';
-		if (file_exists($cache)) {
+		if (file_exists($cache) && false) {
 			$data = file_get_contents($cache);
 			return unserialize($data);
 		}
@@ -160,11 +160,11 @@ class Service
 
 			if (! empty($page)) {
 
-				$tidy = new tidy();
+				/*$tidy = new tidy();
 				$page = mb_convert_encoding($page, 'HTML-ENTITIES', 'UTF-8');
 				$page = $tidy->repairString($page, [
 						'output-xhtml' => true,
-				], 'utf8');
+				], 'utf8');*/
 
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
