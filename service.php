@@ -47,7 +47,7 @@ class Service
 
 		// create a json object to send to the template
 		$content = [
-				'title' => $page['title'] ?? 'Wikipedia',
+				'title' => utf8_encode($page['title'] ?? 'Wikipedia'),
 				'body' => $page['body'],
 				'image' => $imageName
 		];
