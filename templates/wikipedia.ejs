@@ -1,6 +1,6 @@
 <div class="row">
 	<div class="col s12 center-align">
-		<% if (typeof title != 'undefined')  { %>
+		<% if (typeof title !== 'undefined')  { %>
 			<h1><%- title %></h1>
 			<% if(image) { %>
 				<img class="fullscreen" src="{{APP_IMAGE_PATH}}<%= image %>" alt="<%= title %>"/>
