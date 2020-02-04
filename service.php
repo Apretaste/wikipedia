@@ -1,13 +1,8 @@
 <?php
 
-use Apretaste\Notifications;
-use Apretaste\Money;
-use Apretaste\Person;
 use Apretaste\Request;
 use Apretaste\Response;
-use Framework\Database;
 use Apretaste\Challenges;
-use Apretaste\Level;
 use Framework\Utils;
 
 class Service
@@ -15,7 +10,7 @@ class Service
 	/**
 	 * Open the wikipedia service
 	 *
-	 * @param \Apretaste\Request  $request
+	 * @param \Apretaste\Request $request
 	 * @param \Apretaste\Response $response
 	 *
 	 * @throws \Framework\Alert
@@ -38,7 +33,7 @@ class Service
 			$response->setCache();
 			$response->setTemplate('message.ejs', [
 					'header' => 'Búsqueda no encontrada',
-					'text'   => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
+					'text' => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
 			]);
 			return;
 		}
@@ -52,7 +47,7 @@ class Service
 		// create a json object to send to the template
 		$content = [
 				'title' => $page['title'],
-				'body'  => $page['body'],
+				'body' => $page['body'],
 				'image' => $imageName
 		];
 
@@ -203,14 +198,14 @@ class Service
 
 				// make the quotes takes the whole screen
 				$nodes = $xpath->query("//table[contains(@class, 'wikitable')]");
-				for ($i=0; $i<$nodes->length; $i++) {
+				for ($i = 0; $i < $nodes->length; $i++) {
 					$nodes->item($i)->setAttribute('width', '100%');
 					$nodes->item($i)->setAttribute('style', 'table-layout:fixed; width:100%;');
 				}
 
 				// remove all the noresize resources that makes the page wider
 				$nodes = $xpath->query("//*[contains(@class, 'noresize')]");
-				for ($i=0; $i<$nodes->length; $i++) {
+				for ($i = 0; $i < $nodes->length; $i++) {
 					$nodes->item($i)->parentNode->removeChild($nodes->item($i));
 				}
 
@@ -222,7 +217,7 @@ class Service
 					foreach ($imagestags as $imgtag) {
 						// get the full path to the image
 						$imgsrc = $imgtag->getAttribute('src');
-						if (substr($imgsrc, 0, 2)==='//') {
+						if (substr($imgsrc, 0, 2) === '//') {
 							$imgsrc = 'https:' . $imgsrc;
 						}
 
@@ -253,7 +248,7 @@ class Service
 
 				// remove all the <a> linking images
 				$nodes = $xpath->query("//a[contains(@class, 'image')]");
-				for ($i=0; $i<$nodes->length; $i++) {
+				for ($i = 0; $i < $nodes->length; $i++) {
 					$nodes->item($i)->parentNode->removeChild($nodes->item($i));
 				}
 
@@ -262,7 +257,7 @@ class Service
 
 				// convert the links to onclick
 				preg_match_all('/href="\/wiki\/(.*?)"/', $page, $matches);
-				for ($i=0, $iMax = count($matches[0]); $i < $iMax; $i++) {
+				for ($i = 0, $iMax = count($matches[0]); $i < $iMax; $i++) {
 					$onclick = 'wikisearch("' . urldecode($matches[1][$i]) . '")';
 					$page = str_replace($matches[0][$i], "href='#!' onclick='$onclick'", $page);
 				}
@@ -272,8 +267,8 @@ class Service
 
 				// save the content that will go to the view
 				$finalContent = [
-						'title'  => $title,
-						'body'   => base64_encode($page),
+						'title' => $title,
+						'body' => base64_encode($page),
 						'images' => $images
 				];
 
