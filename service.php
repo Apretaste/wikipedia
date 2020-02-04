@@ -4,16 +4,15 @@ use Apretaste\Request;
 use Apretaste\Response;
 use Apretaste\Challenges;
 use Framework\Utils;
+use Framework\Crawler;
 
 class Service
 {
 	/**
 	 * Open the wikipedia service
 	 *
-	 * @param \Apretaste\Request $request
-	 * @param \Apretaste\Response $response
-	 *
-	 * @throws \Framework\Alert
+	 * @param Request $request
+	 * @param Response $response
 	 * @author salvipascual
 	 */
 	public function _main(Request $request, Response &$response)
@@ -21,8 +20,7 @@ class Service
 		// do not allow blank searches
 		if (empty($request->input->data->query)) {
 			$response->setCache();
-			$response->setTemplate('home.ejs', []);
-			return;
+			return $response->setTemplate('home.ejs', []);
 		}
 
 		// find the right query in wikipedia
@@ -31,11 +29,10 @@ class Service
 		// message of the search is not valid
 		if (empty($correctedQuery)) {
 			$response->setCache();
-			$response->setTemplate('message.ejs', [
-					'header' => 'Búsqueda no encontrada',
-					'text' => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
+			return $response->setTemplate('message.ejs', [
+				'header' => 'Búsqueda no encontrada',
+				'text' => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
 			]);
-			return;
 		}
 
 		// get the HTML code for the page
@@ -46,24 +43,25 @@ class Service
 
 		// create a json object to send to the template
 		$content = [
-				'title' => $page['title'],
-				'body' => $page['body'],
-				'image' => $imageName
+			'title' => utf8_encode($page['title'] ?? 'Wikipedia'),
+			'body' => $page['body'],
+			'image' => $imageName
 		];
+
+		// complete challenge
+		Challenges::complete('search-in-wikipedia', $request->person->id);
 
 		// send the response to the template
 		$response->setCache('month');
 		$response->setTemplate('wikipedia.ejs', $content, $page['images']);
-
-		Challenges::complete('search-in-wikipedia', $request->person->id);
 	}
 
 	/**
 	 * Search in Wikipedia using OpenSearch
 	 *
-	 * @author salvipascual
 	 * @param String: text to search
 	 * @return Mixed: String OR false if article not found
+	 * @author salvipascual
 	 */
 	private function search($query)
 	{
@@ -71,7 +69,7 @@ class Service
 		$encodedQuery = urlencode($query);
 
 		// get the results part as an array
-		$page = file_get_contents("http://es.wikipedia.org/w/api.php?action=opensearch&search=$encodedQuery&limit=10&namespace=0&format=json");
+		$page = Crawler::get("http://es.wikipedia.org/w/api.php?action=opensearch&search=$encodedQuery&limit=10&namespace=0&format=json");
 		$results = json_decode($page)[1];
 
 		// return corrected query or false
@@ -86,22 +84,20 @@ class Service
 	 * Get an article from wikipedia
 	 *
 	 * @param String: text to search
-	 *
 	 * @return Mixed
-	 * @throws \Exception
 	 * @author salvipascual
 	 */
 	private function get($query)
 	{
 		// get content from cache
-		$cache = TEMP_PATH .'wikipedia_'. md5($query) . date('Ym') .'.cache';
-		if (file_exists($cache)) {
+		$cache = TEMP_PATH . 'cache/wikipedia_' . md5($query) . date('Ym') . '.cache';
+		if (file_exists($cache) && false) {
 			$data = file_get_contents($cache);
 			return unserialize($data);
 		}
 
 		// get the url
-		$page = file_get_contents("http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse");
+		$page = Crawler::get("http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse");
 
 		// if data was found ...
 		if (strpos($page, 'missing=""') === false) {
@@ -158,7 +154,9 @@ class Service
 			if (! empty($page)) {
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
-				@$doc->loadHTML($page);
+				try {
+					@$doc->loadHTML($page);
+				} catch (Exception $e) { }
 
 				// New-up an instance of our DOMXPath class
 				$xpath = new DOMXPath($doc);
@@ -236,7 +234,7 @@ class Service
 						}
 
 						// save image file
-						$filePath = TEMP_PATH . Utils::randomHash() .'.jpg';
+						$filePath = TEMP_PATH . 'cache/' . Utils::randomHash() . '.jpg';
 						$content = file_get_contents($imgsrc);
 						file_put_contents($filePath, $content);
 
