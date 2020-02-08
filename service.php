@@ -105,6 +105,7 @@ class Service
 
 		// get the url
 		$page = Crawler::get("http://es.wikipedia.org/w/api.php?action=query&prop=revisions&rvprop=content&format=xml&redirects=1&titles=$query&rvparse");
+		$page = str_replace("/wiki/Wikipedia:Manual_de_estilo/P%C3%A1ginas_de_desambiguaci%C3%B3n", "", $page);
 
 		// if data was found ...
 		if (strpos($page, 'missing=""') === false) {
