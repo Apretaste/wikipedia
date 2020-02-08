@@ -5,8 +5,7 @@ $(document).ready(function () {
 	});
 });
 
-function submit()
-{
+function submit() {
 	// get the query
 	var query = $('#query').val();
 
@@ -14,8 +13,7 @@ function submit()
 	wikisearch(query);
 }
 
-function wikisearch(query)
-{
+function wikisearch(query) {
 	// check the query is not empty
 	if(query.length < 1) {
 		M.toast({html: 'Escriba lo que desea buscar'});

@@ -2,19 +2,17 @@
 
 use Apretaste\Request;
 use Apretaste\Response;
-use Framework\Crawler;
 use Apretaste\Challenges;
 use Framework\Utils;
+use Framework\Crawler;
 
 class Service
 {
 	/**
 	 * Open the wikipedia service
 	 *
-	 * @param \Apretaste\Request $request
-	 * @param \Apretaste\Response $response
-	 *
-	 * @throws \Framework\Alert
+	 * @param Request $request
+	 * @param Response $response
 	 * @author salvipascual
 	 */
 	public function _main(Request $request, Response &$response)
@@ -22,8 +20,7 @@ class Service
 		// do not allow blank searches
 		if (empty($request->input->data->query)) {
 			$response->setCache();
-			$response->setTemplate('home.ejs', []);
-			return;
+			return $response->setTemplate('home.ejs', []);
 		}
 
 		// find the right query in wikipedia
@@ -32,11 +29,10 @@ class Service
 		// message of the search is not valid
 		if (empty($correctedQuery)) {
 			$response->setCache();
-			$response->setTemplate('message.ejs', [
-					'header' => 'Búsqueda no encontrada',
-					'text' => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
+			return $response->setTemplate('message.ejs', [
+				'header' => 'Búsqueda no encontrada',
+				'text' => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
 			]);
-			return;
 		}
 
 		// get the HTML code for the page
@@ -47,25 +43,24 @@ class Service
 
 		// create a json object to send to the template
 		$content = [
-				'title' => utf8_encode($page['title'] ?? 'Wikipedia'),
-				'body' => $page['body'],
-				'image' => $imageName
+			'title' => utf8_encode($page['title'] ?? 'Wikipedia'),
+			'body' => $page['body'],
+			'image' => $imageName
 		];
+
+		// complete challenge
+		Challenges::complete('search-in-wikipedia', $request->person->id);
 
 		// send the response to the template
 		$response->setCache('month');
 		$response->setTemplate('wikipedia.ejs', $content, $page['images']);
-
-		Challenges::complete('search-in-wikipedia', $request->person->id);
 	}
 
 	/**
 	 * Search in Wikipedia using OpenSearch
 	 *
 	 * @param String: text to search
-	 *
 	 * @return Mixed: String OR false if article not found
-	 * @throws \Framework\Alert
 	 * @author salvipascual
 	 */
 	private function search($query)
@@ -89,15 +84,13 @@ class Service
 	 * Get an article from wikipedia
 	 *
 	 * @param String: text to search
-	 *
 	 * @return Mixed
-	 * @throws \Exception
 	 * @author salvipascual
 	 */
 	private function get($query)
 	{
 		// get content from cache
-		$cache = TEMP_PATH .'wikipedia_'. md5($query) . date('Ym') .'.cache';
+		$cache = TEMP_PATH . 'cache/wikipedia_' . md5($query) . date('Ym') . '.cache';
 		if (file_exists($cache) && false) {
 			$data = file_get_contents($cache);
 			return unserialize($data);
@@ -160,20 +153,11 @@ class Service
 			$page = trim($page);
 
 			if (! empty($page)) {
-
-				/*$tidy = new tidy();
-				$page = mb_convert_encoding($page, 'HTML-ENTITIES', 'UTF-8');
-				$page = $tidy->repairString($page, [
-						'output-xhtml' => true,
-				], 'utf8');*/
-
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
 				try {
 					@$doc->loadHTML($page);
-				} catch (Exception $e) {
-
-				}
+				} catch (Exception $e) { }
 
 				// New-up an instance of our DOMXPath class
 				$xpath = new DOMXPath($doc);
@@ -251,7 +235,7 @@ class Service
 						}
 
 						// save image file
-						$filePath = TEMP_PATH . Utils::randomHash() .'.jpg';
+						$filePath = TEMP_PATH . 'cache/' . Utils::randomHash() . '.jpg';
 						$content = file_get_contents($imgsrc);
 						file_put_contents($filePath, $content);
 
