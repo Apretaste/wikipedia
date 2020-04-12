@@ -8,11 +8,15 @@ use Framework\Crawler;
 
 class Service
 {
+
 	/**
 	 * Open the wikipedia service
 	 *
 	 * @param Request $request
 	 * @param Response $response
+	 *
+	 * @return \Apretaste\Response
+	 * @throws \Framework\Alert
 	 * @author salvipascual
 	 */
 	public function _main(Request $request, Response &$response)
@@ -59,8 +63,10 @@ class Service
 	/**
 	 * Search in Wikipedia using OpenSearch
 	 *
-	 * @param String: text to search
+	 * @param  String: text to search
+	 *
 	 * @return Mixed: String OR false if article not found
+	 * @throws \Framework\Alert
 	 * @author salvipascual
 	 */
 	private function search($query)
@@ -83,8 +89,10 @@ class Service
 	/**
 	 * Get an article from wikipedia
 	 *
-	 * @param String: text to search
+	 * @param  String: text to search
+	 *
 	 * @return Mixed
+	 * @throws \Framework\Alert
 	 * @author salvipascual
 	 */
 	private function get($query)
@@ -157,7 +165,8 @@ class Service
 				$doc = new DOMDocument();
 				try {
 					@$doc->loadHTML($page);
-				} catch (Exception $e) { }
+				} catch (Exception $e) {
+				}
 
 				// New-up an instance of our DOMXPath class
 				$xpath = new DOMXPath($doc);
@@ -173,7 +182,7 @@ class Service
 
 				// get the title from the response
 				$nodes = $xpath->query("//th[contains(@class, 'cabecera')]");
-				if ($nodes->length > 0) {
+				if (is_object($nodes) && $nodes->length > 0) {
 					$title = htmlentities(trim($nodes->item(0)->textContent), ENT_COMPAT, 'UTF-8');
 				} else {
 					$title = urldecode(ucwords($query));
@@ -181,7 +190,7 @@ class Service
 
 				// make the suggestion smaller and separate it from the table
 				$nodes = $xpath->query("//div[contains(@class, 'rellink')]");
-				if ($nodes->length > 0) {
+				if (is_object($nodes) && $nodes->length > 0) {
 					$nodes->item(0)->setAttribute('style', 'font-size:small;');
 					$nodes->item(0)->appendChild($doc->createElement('br'));
 					$nodes->item(0)->appendChild($doc->createElement('br'));
@@ -189,7 +198,7 @@ class Service
 
 				// make the table centered
 				$nodes = $xpath->query("//table[contains(@class, 'infobox')]");
-				if ($nodes->length > 0) {
+				if (is_object($nodes) && $nodes->length > 0) {
 					$nodes->item(0)->setAttribute('border', '1');
 					$nodes->item(0)->setAttribute('width', '100%');
 					$nodes->item(0)->setAttribute('style', 'width:100%;');
@@ -197,15 +206,19 @@ class Service
 
 				// make the quotes takes the whole screen
 				$nodes = $xpath->query("//table[contains(@class, 'wikitable')]");
-				for ($i = 0; $i < $nodes->length; $i++) {
-					$nodes->item($i)->setAttribute('width', '100%');
-					$nodes->item($i)->setAttribute('style', 'table-layout:fixed; width:100%;');
+				if (is_object($nodes)) {
+					for ($i = 0; $i < $nodes->length; $i++) {
+						$nodes->item($i)->setAttribute('width', '100%');
+						$nodes->item($i)->setAttribute('style', 'table-layout:fixed; width:100%;');
+					}
 				}
 
 				// remove all the noresize resources that makes the page wider
 				$nodes = $xpath->query("//*[contains(@class, 'noresize')]");
-				for ($i = 0; $i < $nodes->length; $i++) {
-					$nodes->item($i)->parentNode->removeChild($nodes->item($i));
+				if (is_object($nodes)) {
+					for ($i = 0; $i < $nodes->length; $i++) {
+						$nodes->item($i)->parentNode->removeChild($nodes->item($i));
+					}
 				}
 
 				// Load images
@@ -214,9 +227,13 @@ class Service
 				$images = [];
 				if ($imagestags->length > 0) {
 					foreach ($imagestags as $imgtag) {
+						if (!is_object($imgtag)) {
+							continue;
+						}
+
 						// get the full path to the image
 						$imgsrc = $imgtag->getAttribute('src');
-						if (substr($imgsrc, 0, 2) === '//') {
+						if (strpos($imgsrc, '//') === 0) {
 							$imgsrc = 'https:' . $imgsrc;
 						}
 
@@ -247,8 +264,10 @@ class Service
 
 				// remove all the <a> linking images
 				$nodes = $xpath->query("//a[contains(@class, 'image')]");
-				for ($i = 0; $i < $nodes->length; $i++) {
-					$nodes->item($i)->parentNode->removeChild($nodes->item($i));
+				if (is_object($nodes)) {
+					for ($i = 0; $i < $nodes->length; $i++) {
+						$nodes->item($i)->parentNode->removeChild($nodes->item($i));
+					}
 				}
 
 				// Output the HTML of our container
