@@ -42,6 +42,14 @@ class Service
 		// get the HTML code for the page
 		$page = $this->get(urlencode($correctedQuery));
 
+		if (gettype($page) == "boolean") {
+			error_log("[WIKIPEDIA] Error en query {$request->input->data->query}");
+			return $response->setTemplate('message.ejs', [
+				'header' => 'Búsqueda no encontrada',
+				'text' => 'Su búsqueda no fue encontrada en Wikipedia. Por favor modifique el texto e intente nuevamente.'
+			]);
+		}
+
 		// get the home image
 		$imageName = empty($page['images']) ? false : basename($page['images'][0]);
 
@@ -63,7 +71,7 @@ class Service
 	/**
 	 * Search in Wikipedia using OpenSearch
 	 *
-	 * @param  String: text to search
+	 * @param String: text to search
 	 *
 	 * @return Mixed: String OR false if article not found
 	 * @throws \Framework\Alert
@@ -89,7 +97,7 @@ class Service
 	/**
 	 * Get an article from wikipedia
 	 *
-	 * @param  String: text to search
+	 * @param String: text to search
 	 *
 	 * @return Mixed
 	 * @throws \Framework\Alert
@@ -160,7 +168,7 @@ class Service
 			$page = str_replace('>?</span>', '></span>', $page);
 			$page = trim($page);
 
-			if (! empty($page)) {
+			if (!empty($page)) {
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
 				try {
@@ -285,9 +293,9 @@ class Service
 
 				// save the content that will go to the view
 				$finalContent = [
-						'title' => $title,
-						'body' => base64_encode($page),
-						'images' => $images
+					'title' => $title,
+					'body' => base64_encode($page),
+					'images' => $images
 				];
 
 				// create the cache and return
