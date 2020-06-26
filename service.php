@@ -23,8 +23,10 @@ class Service
 	{
 		// do not allow blank searches
 		if (empty($request->input->data->query)) {
+			$images = [SERVICE_PATH . 'wikipedia' . "/images/main_logo.png"];
+			
 			$response->setCache();
-			return $response->setTemplate('home.ejs', []);
+			return $response->setTemplate('home.ejs', [], $images);
 		}
 
 		// find the right query in wikipedia
