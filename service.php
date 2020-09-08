@@ -8,25 +8,20 @@ use Framework\Crawler;
 
 class Service
 {
-
 	/**
 	 * Open the wikipedia service
 	 *
 	 * @param Request $request
 	 * @param Response $response
-	 *
-	 * @return \Apretaste\Response
-	 * @throws \Framework\Alert
+	 * @return Response
 	 * @author salvipascual
 	 */
 	public function _main(Request $request, Response &$response)
 	{
 		// do not allow blank searches
 		if (empty($request->input->data->query)) {
-			$images = [SERVICE_PATH . 'wikipedia' . "/images/main_logo.png"];
-			
-			$response->setCache();
-			return $response->setTemplate('home.ejs', [], $images);
+			$response->setCache('year');
+			return $response->setTemplate('home.ejs');
 		}
 
 		// find the right query in wikipedia
@@ -74,9 +69,7 @@ class Service
 	 * Search in Wikipedia using OpenSearch
 	 *
 	 * @param String: text to search
-	 *
 	 * @return Mixed: String OR false if article not found
-	 * @throws \Framework\Alert
 	 * @author salvipascual
 	 */
 	private function search($query)
@@ -100,9 +93,7 @@ class Service
 	 * Get an article from wikipedia
 	 *
 	 * @param String: text to search
-	 *
 	 * @return Mixed
-	 * @throws \Framework\Alert
 	 * @author salvipascual
 	 */
 	private function get($query)

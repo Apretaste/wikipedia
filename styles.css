@@ -12,7 +12,6 @@
 	margin-bottom: 80px;
 }
 
-.home img {
-	margin: 30% 0px 20px 0px;;
-	height: 150px;
+.home .main-icon {
+	margin: 20% 0px 20px 0px;;
 }

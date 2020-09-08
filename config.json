@@ -1,6 +1,7 @@
 {
 	"name": "wikipedia",
 	"caption": "Wikipedia",
+	"icon": "fab fa-wikipedia-w",
 	"description": "Le permite consultar la Wikipedia en tiempo real",
 	"category": "academico",
 	"creator": "salvi@apretaste.org",
