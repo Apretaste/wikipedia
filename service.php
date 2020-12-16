@@ -254,11 +254,16 @@ class Service
 
 						// save image file
 						$filePath = TEMP_PATH . 'cache/' . Utils::randomHash() . '.jpg';
-						$content = file_get_contents($imgsrc);
-						file_put_contents($filePath, $content);
+						try {
+							$content = Crawler::get($imgsrc);
+							file_put_contents($filePath, $content);
 
-						// save the image in the array for the template
-						$images[] = $filePath;
+							// save the image in the array for the template
+							$images[] = $filePath;
+						} catch(Exception $e) {
+
+						}
+
 						break; // save only the first valid image
 					}
 				}
