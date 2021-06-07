@@ -16,7 +16,7 @@ class Service
 	 * @return Response
 	 * @author salvipascual
 	 */
-	public function _main(Request $request, Response &$response)
+	public function _main(Request $request, Response $response)
 	{
 		// do not allow blank searches
 		if (empty($request->input->data->query)) {
@@ -164,10 +164,9 @@ class Service
 			if (!empty($page)) {
 				// Build our DOMDocument, and load our HTML
 				$doc = new DOMDocument();
-				try {
-					@$doc->loadHTML($page);
-				} catch (Exception $e) {
-				}
+				libxml_use_internal_errors(true);
+				@$doc->loadHTML($page);
+				libxml_use_internal_errors(false);
 
 				// New-up an instance of our DOMXPath class
 				$xpath = new DOMXPath($doc);

@@ -22,7 +22,8 @@ function wikisearch(query) {
 
 	// send the request
 	apretaste.send({
-		command: "WIKIPEDIA", 
-		data: {"query": query},
-		redirect: true});
+		command: 'WIKIPEDIA',
+		data: {query: query},
+		redirect: true
+	});
 }
